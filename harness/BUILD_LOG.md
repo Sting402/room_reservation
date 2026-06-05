@@ -68,3 +68,14 @@
 - Did: renderTimeline() 加一行 early return — 當 selectedDate 為今天且 isSlotPast(slot)，跳過該 row。未來日期/過去日期行為不受影響。
 - Result: PASS — 今天只顯示 16:00、17:00（2 rows）；明天顯示全 9 rows；過去日期顯示全 9 rows read-only
 - Next: commit
+
+## [6 / 2026-06-05] Bug fixes — selectedDate rendering + date picker UI
+- State: 換日期時 room cards 顯示舊日期；未來日期顯示「已過」；日期控制元件視覺不符。
+- Root cause: onDateChange() → load() 但 isLoading=true 時 load() bail out，renderDashboard() 未執行，卡片停留在舊 selectedDate。
+- Did:
+  - onDateChange(): isLoading=false 重置 + 立即呼叫 renderDashboard() 再呼叫 load()
+  - 加入 normalizeDateInput / isSelectedDateToday / isSelectedDatePast / isSelectedDateFuture
+  - style.css: date-input color-scheme dark；date-quick-btn active=綠填滿/hover=綠邊
+  - config.js: open "09:00" → "08:00" (規格要求)
+- Result: PASS — today(0 已過)、tomorrow(instant cards + 10 slots)、past(read-only)；0 console errors
+- Next: commit

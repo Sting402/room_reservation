@@ -196,16 +196,33 @@ function initDatePicker() {
 }
 
 function onDateChange(newDate) {
-  if (!isValidDateInCurrentYear(newDate)) {
+  const normalized = normalizeDateInput(newDate);
+  if (!isValidDateInCurrentYear(normalized)) {
     showToast('請選擇本年度日期', 'error'); return;
   }
-  selectedDate = newDate;
-  saveSelectedDate(newDate);
-  document.getElementById('date-input').value = newDate;
+  selectedDate = normalized;
+  saveSelectedDate(normalized);
+  document.getElementById('date-input').value = normalized;
   updateDateDisplay();
-  dayData = {};           // clear stale data
-  load();
+  dayData = {};      // clear stale data immediately
+  isLoading = false; // cancel any in-flight poll so load() below proceeds
+  renderDashboard(); // instant UI update — shows new date on cards/timeline with empty data
+  load();            // fetch actual data for this date from backend
 }
+
+// Normalize various date string formats to YYYY-MM-DD
+function normalizeDateInput(str) {
+  if (!str) return '';
+  // HTML date inputs already return YYYY-MM-DD; sanitize just in case
+  const m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (!m) return str;
+  return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+}
+
+// Convenience helpers
+function isSelectedDateToday()  { return compareDateToToday(selectedDate) === 'today'; }
+function isSelectedDatePast()   { return compareDateToToday(selectedDate) === 'past'; }
+function isSelectedDateFuture() { return compareDateToToday(selectedDate) === 'future'; }
 
 function updateDateDisplay() {
   const label = document.getElementById('date-label');

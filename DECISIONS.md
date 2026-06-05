@@ -56,4 +56,10 @@
 ## #018 2026-06-05 — 不實作全年曆格，採 <input type="date">
 理由：規格明確說「不要建全年曆格除非已經很容易」；日期 input 原生支援 min/max 且手機鍵盤友善。狀態：Accepted。
 
+## #019 2026-06-05 — onDateChange 立即 renderDashboard 再 load()
+理由：load() 有 isLoading guard 防 concurrent poll，但 date 切換時必須保證 renderDashboard 被執行；解法：reset isLoading=false + 先 renderDashboard()（空資料）再 load()（補真實資料）。狀態：Accepted。
+
+## #020 2026-06-05 — schedule open 設定 08:00（規格要求）
+理由：產品規格明確要求 08:00–18:00 共 10 格；之前曾改為 09:00 屬暫時偏差，現恢復。狀態：Accepted。
+
 <!-- Claude Code 在此往下追加新決策 -->
