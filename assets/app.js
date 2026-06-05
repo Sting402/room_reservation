@@ -1,11 +1,9 @@
 'use strict';
-/* app.js — Meeting Room Scheduler v4
-   Supports: variable duration, dept dropdown, range-based conflict,
+/* app.js — Meeting Room Scheduler v5
+   Supports: variable duration, first-name identity, range-based conflict,
    cancel-with-reason, edit, this-week list, CSV export */
 
 // ─── Constants ────────────────────────────────────────────────────────────
-// Department options — add/remove here to change the dropdown
-const DEPT_OPTIONS = ['業務部', '設計部', '品保部', '會計部', '倉管部', '主管會議'];
 
 // Duration options — value, label, and how to resolve start/end
 // For fixed half-day/full-day, fixedStart overrides the clicked slot.
@@ -21,6 +19,60 @@ const DURATION_OPTIONS = [
   { value: 'afternoon_half', label: '下午半天', slots: 5,  fixedStart: '1300', fixedEnd: '18:00' },
   { value: 'full_day',       label: '全天',     slots: 10, fixedStart: '0800', fixedEnd: '18:00' },
 ];
+
+// ─── Identity / name normalization ───────────────────────────────────────
+/**
+ * Normalize a name input to a lookup key.
+ * - English: lowercase + remove all spaces (so "Alex C" = "AlexC" = "alexc")
+ * - Chinese / non-ASCII: trim + collapse spaces, keep exact characters
+ */
+function normalizeName(raw) {
+  if (!raw) return '';
+  const trimmed = raw.trim().replace(/\s+/g, ' ');
+  if (/[^\x00-\x7F]/.test(trimmed)) return trimmed; // Chinese: exact after trim
+  return trimmed.toLowerCase().replace(/\s/g, '');   // English: lowercase + no spaces
+}
+
+/**
+ * Resolve user's typed name to the canonical displayName from config.
+ * Falls back to cleaned input if no alias matches.
+ */
+function resolveDisplayName(input) {
+  const cleaned = (input || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) return '';
+  const key = normalizeName(cleaned);
+  const id  = window.APP_CONFIG?.identity;
+  if (id?.aliasesEnabled && Array.isArray(id.aliases)) {
+    for (const entry of id.aliases) {
+      const aliasArr = Array.isArray(entry.aliases) ? entry.aliases
+                     : (entry.keys ? entry.keys : []);
+      for (const alias of aliasArr) {
+        if (normalizeName(alias) === key) return entry.displayName;
+      }
+    }
+  }
+  return cleaned; // unknown name: use cleaned input as-is
+}
+
+/**
+ * Validate identity config for duplicate normalized keys (warn, don't crash).
+ */
+function validateIdentityConfig() {
+  const id = window.APP_CONFIG?.identity;
+  if (!id?.aliasesEnabled || !Array.isArray(id.aliases)) return;
+  const seen = {};
+  for (const entry of id.aliases) {
+    const aliasArr = Array.isArray(entry.aliases) ? entry.aliases
+                   : (entry.keys ? entry.keys : []);
+    for (const alias of aliasArr) {
+      const key = normalizeName(alias);
+      if (seen[key] && seen[key] !== entry.displayName) {
+        console.warn(`[identity] Duplicate normalized key "${key}": "${seen[key]}" and "${entry.displayName}"`);
+      }
+      seen[key] = entry.displayName;
+    }
+  }
+}
 
 // ─── State ────────────────────────────────────────────────────────────────
 let adapter      = null;
@@ -48,6 +100,7 @@ function init() {
     slots        = generateSlots(window.APP_CONFIG);
     todayDate    = getTaipeiDate();
     selectedDate = loadSavedDate() || todayDate;
+    validateIdentityConfig();
   } catch (e) { showFatalError(e.message); return; }
 
   const params    = new URLSearchParams(location.search);
@@ -155,7 +208,7 @@ function hasConflict(roomId, startSlot, durationSlots, excludeSlot = null) {
 }
 
 // Returns array of warning strings (non-blocking)
-function collectWarnings(roomId, startSlot, durationSlots, booker, dept, people) {
+function collectWarnings(roomId, startSlot, durationSlots, booker, people) {
   const cfg      = window.APP_CONFIG;
   const gran     = cfg.schedule.granularityMinutes;
   const room     = cfg.rooms.find(r => r.id === roomId);
@@ -167,16 +220,17 @@ function collectWarnings(roomId, startSlot, durationSlots, booker, dept, people)
   if (room?.capacity && people > 0 && people > room.capacity) {
     warnings.push(`⚠ 人數（${people}）超過會議室容量（${room.capacity} 人）`);
   }
-  // Buffer for 展間會議室 / 主管會議
-  if (roomId === 'showroom' || dept === '主管會議') {
-    warnings.push('⚠ 展間會議室 / 主管會議建議預留準備時間');
+  // Buffer for 展間會議室
+  if (roomId === 'showroom') {
+    warnings.push('⚠ 展間會議室建議預留佈置準備時間');
   }
   // Lunch crossing
   const lunchStart = 12 * 60, lunchEnd = 13 * 60 + 30;
   if (newStart < lunchEnd && newEnd > lunchStart) {
     warnings.push('⚠ 此預約包含午休時段（12:00–13:30）');
   }
-  // Same booker / same dept overlap in different room
+  // Same booker overlap in different room
+  const bookerKey = normalizeName(booker);
   for (const otherRoom of cfg.rooms) {
     if (otherRoom.id === roomId) continue;
     for (const slot of slots) {
@@ -186,12 +240,8 @@ function collectWarnings(roomId, startSlot, durationSlots, booker, dept, people)
       const bEnd   = bStart + (b.duration_slots || 1) * gran;
       if (newStart < bEnd && newEnd > bStart) {
         const bBooker = b.booker || b.owner || '';
-        const bDept   = b.department || b.dept || '';
-        if (booker && bBooker === booker) {
+        if (bookerKey && normalizeName(bBooker) === bookerKey) {
           warnings.push(`⚠ ${booker} 同時段在 ${otherRoom.name} 也有預約`);
-        }
-        if (dept && bDept === dept) {
-          warnings.push(`⚠ ${dept} 同時段在 ${otherRoom.name} 也有預約`);
         }
       }
     }
@@ -201,7 +251,7 @@ function collectWarnings(roomId, startSlot, durationSlots, booker, dept, people)
 
 // ─── Booking record factory ───────────────────────────────────────────────
 function makeBookingRecord({ roomId, startSlot, startTime, endTime, durationSlots, durationType,
-                              title, booker, department, people, notes, pinHash }) {
+                              title, booker, people, notes, pinHash }) {
   const cfg  = window.APP_CONFIG;
   const room = cfg.rooms.find(r => r.id === roomId);
   return {
@@ -216,12 +266,10 @@ function makeBookingRecord({ roomId, startSlot, startTime, endTime, durationSlot
     duration_slots: durationSlots,
     title:         title || '',
     booker:        booker,
-    owner:         booker,       // backward compat
-    department:    department,
-    dept:          department,   // backward compat
+    owner:         booker,       // backward compat alias
     people:        people || 0,
     notes:         notes || '',
-    purpose:       title || notes || '', // backward compat
+    purpose:       title || notes || '', // backward compat alias
     status:        'active',
     created_at:    new Date().toISOString(),
     updated_at:    null,
@@ -286,11 +334,10 @@ function renderKiosk(kioskDate) {
   document.getElementById('kiosk-status-text').textContent = status.text;
   let infoText = '', nextText = '';
   if (status.state === 'busy' && status.booking) {
-    infoText = `${getBooker(status.booking)} · ${getDept(status.booking)}`;
+    infoText = '會議進行中';
   }
   if (status.nextSlot) {
-    const b = dayData[`${kioskRoomId}:${status.nextSlot}`];
-    nextText = b ? `下一場：${slotLabel(status.nextSlot)} ${getDept(b)}` : '';
+    nextText = `下一場：${slotLabel(status.nextSlot)}`;
   }
   document.getElementById('kiosk-booking-info').textContent = infoText;
   document.getElementById('kiosk-next').textContent         = nextText;
@@ -302,7 +349,6 @@ function initApp(roomParam) {
   startClock('live-clock');
   bindViewNav();
   initDatePicker();
-  populateDeptDropdown();
   bindBookForm();
   bindDetailModal();
   renderDashboard();
@@ -324,17 +370,6 @@ function initApp(roomParam) {
   document.getElementById('export-week-btn')?.addEventListener('click',  () => exportCSV('week'));
 }
 
-// ─── Dept dropdown ────────────────────────────────────────────────────────
-function populateDeptDropdown() {
-  const sel = document.getElementById('f-dept');
-  if (!sel || sel.tagName !== 'SELECT') return;
-  sel.innerHTML = '<option value="">請選擇部門</option>';
-  DEPT_OPTIONS.forEach(d => {
-    const o = document.createElement('option');
-    o.value = d; o.textContent = d;
-    sel.appendChild(o);
-  });
-}
 
 // ─── Date picker ──────────────────────────────────────────────────────────
 function initDatePicker() {
@@ -473,7 +508,7 @@ function getRoomStatus(roomId) {
       if (b && !b._continuation) {
         const endT = getEndTime(slot, b);
         const nextFree = slots.find(s => slotToMins(s) >= slotToMins(slot) + getDurationSlots(b) * gran && !dayData[`${roomId}:${s}`]);
-        return { state: 'busy', icon: '✕', text: `使用中，到 ${endT}`, sub: `${getBooker(b)} · ${getDept(b)}`, booking: b, slot, nextFreeSlot: nextFree };
+        return { state: 'busy', icon: '✕', text: `使用中，到 ${endT}`, sub: '會議進行中', booking: b, slot, nextFreeSlot: nextFree };
       }
     }
   }
@@ -483,7 +518,7 @@ function getRoomStatus(roomId) {
     if (sm > nowMins && sm <= nowMins + 30) {
       const b = dayData[`${roomId}:${slot}`];
       if (b && !b._continuation) {
-        return { state: 'soon', icon: '▲', text: `${slotLabel(slot)} 即將開始`, sub: `${getBooker(b)} · ${getDept(b)}`, booking: b, slot };
+        return { state: 'soon', icon: '▲', text: `${slotLabel(slot)} 即將開始`, sub: '即將開始', booking: b, slot };
       }
     }
   }
@@ -629,23 +664,23 @@ function renderTimeline() {
         btn.disabled = true;
         if (raw && !raw._continuation) {
           btn.classList.add('slot-booked', 'slot-past');
-          btn.textContent = `${getBooker(raw)}`;
-          btn.title = `${getBooker(raw)} · ${getDept(raw)} ${slotLabel(slot)}–${getEndTime(slot, raw)}`;
+          btn.textContent = '已預約';
+          btn.title = `${slotLabel(slot)}–${getEndTime(slot, raw)}`;
           if (rel === 'past') { btn.disabled = false; btn.addEventListener('click', () => openDetailModal(room.id, slot, raw)); }
         } else if (raw && raw._continuation) {
           btn.classList.add('slot-continuation', 'slot-past');
-          btn.textContent = '–';
+          btn.textContent = '已預約';
         } else {
           btn.classList.add(rel === 'past' ? 'slot-past-date' : 'slot-past');
           btn.textContent = rel === 'past' ? '–' : '已過';
         }
       } else if (raw && raw._continuation) {
-        // Continuation slot — show visual indicator, link to primary
+        // Continuation slot — public view shows 已預約 only
         const primaryBooking = dayData[`${room.id}:${raw._primary_slot}`];
         btn.classList.add('slot-continuation');
         if (isCurrent) btn.classList.add('slot-now');
-        btn.textContent = '續';
-        btn.title = primaryBooking ? `${getBooker(primaryBooking)} · ${getDept(primaryBooking)} (延續)` : '延續預約';
+        btn.textContent = '已預約';
+        btn.title = `${slotLabel(slot)} 已預約`;
         if (primaryBooking) {
           btn.addEventListener('click', () => openDetailModal(room.id, raw._primary_slot, primaryBooking));
         }
@@ -655,13 +690,12 @@ function renderTimeline() {
         btn.textContent = '可預約';
         btn.addEventListener('click', () => openBookModal(room.id, slot));
       } else {
-        // Primary booked slot
+        // Primary booked slot — public view shows 已預約 only
         btn.classList.add('slot-booked');
         if (isCurrent) btn.classList.add('slot-now');
-        const endT  = getEndTime(slot, raw);
-        const label = getDurationSlots(raw) > 1 ? `${getBooker(raw)} (–${endT})` : getBooker(raw);
-        btn.textContent = label;
-        btn.title = `${getBooker(raw)}（${getDept(raw)}）${slotLabel(slot)}–${endT}`;
+        const endT = getEndTime(slot, raw);
+        btn.textContent = '已預約';
+        btn.title = `${slotLabel(slot)}–${endT} 已預約`;
         btn.addEventListener('click', () => openDetailModal(room.id, slot, raw));
       }
 
@@ -736,7 +770,7 @@ function renderManage() {
       <div class="booking-item-left">
         <span class="booking-room-tag">${escHtml(room.name)}</span>
         <div class="booking-time">${slotLabel(slot)} – ${escHtml(endT)}</div>
-        <div class="booking-owner">${escHtml(getBooker(booking))} · ${escHtml(getDept(booking))}</div>
+        <div class="booking-owner">${escHtml(getBooker(booking))}</div>
         ${title ? `<div class="booking-purpose">${escHtml(title)}</div>` : ''}
         ${booking.people > 0 ? `<div class="booking-purpose">人數：${booking.people}</div>` : ''}
       </div>`;
@@ -805,7 +839,7 @@ async function renderWeekList() {
           <div class="booking-item-left">
             <span class="booking-room-tag">${escHtml(room.name)}</span>
             <div class="booking-time">${slotLabel(slot)} – ${escHtml(endT)}</div>
-            <div class="booking-owner">${escHtml(getBooker(booking))} · ${escHtml(getDept(booking))}</div>
+            <div class="booking-owner">${escHtml(getBooker(booking))}</div>
             ${title ? `<div class="booking-purpose">${escHtml(title)}</div>` : ''}
           </div>`;
         container.appendChild(item);
@@ -823,7 +857,7 @@ async function renderWeekList() {
 // ─── CSV export ───────────────────────────────────────────────────────────
 async function exportCSV(mode) {
   const cfg  = window.APP_CONFIG;
-  const rows = [['日期', '會議室', '開始時間', '結束時間', '預約人', '部門', '會議主題', '人數', '備註', '狀態']];
+  const rows = [['日期', '會議室', '開始時間', '結束時間', '預約人', '會議主題', '人數', '備註', '狀態']];
 
   async function addDayRows(date, data) {
     slots.forEach(slot => {
@@ -832,7 +866,7 @@ async function exportCSV(mode) {
         if (!b || b._continuation) return;
         rows.push([
           date, room.name, slotLabel(slot), getEndTime(slot, b),
-          getBooker(b), getDept(b), getTitle(b),
+          getBooker(b), getTitle(b),
           b.people || 0, b.notes || '', b.status || 'active'
         ]);
       });
@@ -913,12 +947,6 @@ function openBookModal(roomId, slot, editingData = null) {
   const bk = editingData?.booking || null;
 
   document.getElementById('f-owner').value   = bk ? getBooker(bk) : (id.owner || '');
-  const deptSel = document.getElementById('f-dept');
-  if (deptSel.tagName === 'SELECT') {
-    deptSel.value = bk ? getDept(bk) : (id.dept || '');
-  } else {
-    deptSel.value = bk ? getDept(bk) : (id.dept || '');
-  }
   document.getElementById('f-title').value   = bk ? getTitle(bk) : '';
   document.getElementById('f-people').value  = bk ? (bk.people || '') : '';
   document.getElementById('f-notes').value   = bk ? (bk.notes || '') : '';
@@ -961,8 +989,6 @@ function bindBookForm() {
   document.getElementById('clear-identity-btn').addEventListener('click', () => {
     localStorage.removeItem('mrs:identity');
     document.getElementById('f-owner').value = '';
-    const ds = document.getElementById('f-dept');
-    if (ds.tagName === 'SELECT') ds.value = ''; else ds.value = '';
     showToast('已清除記住的資料', 'info');
   });
   document.getElementById('book-form').addEventListener('submit', e => { e.preventDefault(); submitBook(); });
@@ -970,8 +996,7 @@ function bindBookForm() {
 
 async function submitBook() {
   if (!pendingBook) return;
-  const booker  = document.getElementById('f-owner').value.trim();
-  const dept    = document.getElementById('f-dept').value.trim();
+  const rawName = document.getElementById('f-owner').value.trim();
   const title   = document.getElementById('f-title').value.trim();
   const people  = parseInt(document.getElementById('f-people').value) || 0;
   const notes   = document.getElementById('f-notes').value.trim();
@@ -979,9 +1004,11 @@ async function submitBook() {
   const durVal  = document.getElementById('f-duration').value;
   const cfg     = window.APP_CONFIG;
 
-  if (!booker) { showToast('請填寫預約人姓名', 'error'); return; }
-  if (!dept)   { showToast('請選擇部門', 'error'); return; }
+  if (!rawName) { showToast('請填寫姓名', 'error'); return; }
   if (pinRaw && !/^\d{4}$/.test(pinRaw)) { showToast('PIN 須為 4 位數字', 'error'); return; }
+
+  // Resolve canonical name from aliases; falls back to cleaned input
+  const booker = resolveDisplayName(rawName);
   if (!isValidDateInCurrentYear(selectedDate)) { showToast('請選擇本年度日期', 'error'); return; }
   if (compareDateToToday(selectedDate) === 'past') { showToast('過去的日期無法預約', 'error'); return; }
 
@@ -1008,13 +1035,13 @@ async function submitBook() {
   }
 
   // Collect warnings (non-blocking)
-  const warnings = collectWarnings(roomId, startSlot, durationSlots, booker, dept, people);
+  const warnings = collectWarnings(roomId, startSlot, durationSlots, booker, people);
   if (warnings.length > 0) {
     warnings.forEach(w => showToast(w, 'warn'));
   }
 
   const pinHash = pinRaw ? await hashPin(pinRaw) : null;
-  const booking = makeBookingRecord({ roomId, startSlot, startTime, endTime, durationSlots, durationType, title, booker, department: dept, people, notes, pinHash });
+  const booking = makeBookingRecord({ roomId, startSlot, startTime, endTime, durationSlots, durationType, title, booker, people, notes, pinHash });
   if (editing) booking._replace_id = editing.booking.id;
 
   const submitBtn = document.getElementById('book-submit-btn');
@@ -1038,11 +1065,11 @@ async function submitBook() {
     const result = await adapter.book(selectedDate, roomId, startSlot, booking);
 
     if (result.ok) {
-      saveIdentity(booker, dept);
+      saveIdentity(booker);
       // Optimistic update
       dayData[`${roomId}:${startSlot}`] = booking;
       const gran = cfg.schedule.granularityMinutes;
-      const cont = { _continuation: true, _primary_slot: startSlot, id: booking.id, booker, owner: booker, department: dept, dept };
+      const cont = { _continuation: true, _primary_slot: startSlot, id: booking.id, booker, owner: booker };
       let cur = startSlot;
       for (let i = 1; i < durationSlots; i++) {
         cur = slotPlusGranApp(cur, gran);
@@ -1059,7 +1086,7 @@ async function submitBook() {
         action: editing ? 'edit' : 'book',
         room_id: roomId, slot: startSlot,
         start_time: startTime, end_time: endTime,
-        booker, dept, title
+        booker, title
       });
     } else if (result.reason === 'conflict') {
       showToast('這個時段剛被別人訂走了，請重新選擇', 'error');
@@ -1101,7 +1128,6 @@ function openDetailModal(roomId, slot, booking) {
     ['日期',   dateStr],
     ['時段',   `${slotLabel(slot)} – ${endT}`],
     ['預約人', getBooker(booking)],
-    ['部門',   getDept(booking)],
   ];
   if (getTitle(booking)) rows.push(['主題', getTitle(booking)]);
   if (booking.people > 0) rows.push(['人數', String(booking.people)]);
@@ -1180,7 +1206,7 @@ async function submitCancel() {
       adapter.appendLog(selectedDate, {
         ts: new Date().toISOString(), date: selectedDate,
         action: 'cancel', room_id: roomId, slot,
-        booker: getBooker(booking), dept: getDept(booking),
+        booker: getBooker(booking),
         cancel_reason: reason,
         cancelled_at: new Date().toISOString()
       });
@@ -1218,8 +1244,8 @@ function wireOffline() {
 function getSavedIdentity() {
   try { return JSON.parse(localStorage.getItem('mrs:identity') || '{}'); } catch { return {}; }
 }
-function saveIdentity(owner, dept) {
-  localStorage.setItem('mrs:identity', JSON.stringify({ owner, dept }));
+function saveIdentity(owner) {
+  localStorage.setItem('mrs:identity', JSON.stringify({ owner }));
 }
 
 // ─── Overlay helpers ──────────────────────────────────────────────────────

@@ -33,6 +33,21 @@ window.APP_CONFIG = {
   purposeMaxLength: 30,          // 用途欄字數上限
   enablePin: true,               // 是否允許設定取消 PIN（選填功能）
 
+  // ── 姓名識別（可選）─────────────────────────────────────────────────────
+  // 使用者只需填名字。若有同名，填名字 + 姓氏縮寫（如 Alex C）。
+  // 英文大小寫與空格不影響比對："alex c"、"AlexC"、"ALEX C" 均視為相同。
+  // 中文姓名 trim 後完整比對字元。
+  identity: {
+    aliasesEnabled: true,    // false = 跳過 alias 查找，直接用使用者輸入
+    aliases: [
+      { displayName: "Steven",  aliases: ["Steven"] },
+      { displayName: "Nicole",  aliases: ["Nicole"] },
+      { displayName: "Alex C",  aliases: ["Alex C"] },  // "alexc", "ALEX C" 均 match
+      { displayName: "Alex W",  aliases: ["Alex W"] },
+      { displayName: "吳紹雍",   aliases: ["吳紹雍"] }
+    ]
+  },
+
   // Upstash Redis REST — 僅 provider="upstash" 時需要
   // 真實金鑰放在根目錄 config.js（已 .gitignore），切勿提交此處的真實值
   upstash: {

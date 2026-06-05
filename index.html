@@ -143,21 +143,15 @@
           </select>
         </div>
 
-        <!-- Booker (required) -->
+        <!-- Name (required) — first name only; last initial if duplicate -->
         <div class="field">
-          <label for="f-owner">預約人 <span class="req" aria-label="必填">*</span></label>
+          <label for="f-owner">姓名 <span class="req" aria-label="必填">*</span></label>
           <div class="input-row">
-            <input id="f-owner" type="text" maxlength="20" autocomplete="name" placeholder="你的姓名" required>
+            <input id="f-owner" type="text" maxlength="20" autocomplete="given-name"
+              placeholder="請輸入名字，例如 Steven；若重名請輸入 Alex C" required>
             <button type="button" id="clear-identity-btn" class="clear-btn" title="清除記住的資料">清除</button>
           </div>
-        </div>
-
-        <!-- Department dropdown (required) -->
-        <div class="field">
-          <label for="f-dept">部門 <span class="req" aria-label="必填">*</span></label>
-          <select id="f-dept" required>
-            <option value="">請選擇部門</option>
-          </select>
+          <span class="hint">名字即可；若有同名請加姓氏縮寫（如 Alex C）</span>
         </div>
 
         <!-- Title (optional) -->
