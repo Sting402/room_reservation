@@ -24,10 +24,14 @@
 ## 不保證 / 不防護(明講)
 不防惡意覆蓋、不防 DDoS、不防內部濫用、不加密內容、無合規。
 
-## 唯一正解(放 ROADMAP,不放 MVP)
-**Cloudflare Worker 代理**:token 藏 Worker secret;前端只呼叫 Worker;Worker 內做
-(a) 寫入白名單(只允許 `SET NX`/`DEL` 指定 key 格式)、(b) 簡單 rate limit、(c) 隱藏真實後端。
-這是把它從「能被任何人清空的便利貼」升級為「可信任內部工具」的關鍵一步,**優先於任何花俏功能**。
+## 唯一正解（放 ROADMAP，不放 MVP）
+**Cloudflare Worker 代理**：token 藏 Worker secret；前端只呼叫 Worker；Worker 內做
+(a) 寫入白名單（只允許 `SET NX`/`DEL` 指定 key 格式）、(b) 簡單 rate limit、(c) 隱藏真實後端。
+這是把它從「能被任何人清空的便利貼」升級為「可信任內部工具」的關鍵一步，**優先於任何花俏功能**。
+
+> **明確聲明（v3）**：直接前端暴露 Upstash token 是 MVP 主動接受的設計取捨，
+> 不是疏漏。目前唯一加固路徑是 Cloudflare Worker proxy，已列入 ROADMAP。
+> 在此之前，切勿將此工具用於任何敏感會議或機密討論。
 
 ## 公司導入注意事項(給決策者)
 - 視為「方便的共享便利貼」,不要放任何敏感會議資訊。
