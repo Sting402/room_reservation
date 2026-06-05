@@ -48,7 +48,16 @@
       <div class="shadow-warning" role="alert">
         ⚠ Shadow IT 系統 · 請勿填寫任何機密資訊
       </div>
+      <!-- Backward-compat stubs: old v1 app.js uses these IDs.
+           Hidden so they never render; new app.js ignores them.
+           Prevents null-dereference crash when browser caches old JS. -->
+      <span id="date-line"   hidden aria-hidden="true"></span>
+      <span id="status-line" hidden aria-hidden="true"></span>
+      <button id="refresh-btn" hidden aria-hidden="true" tabindex="-1"></button>
     </header>
+    <!-- Backward-compat containers for old tab/panel architecture -->
+    <div id="room-tabs"   hidden aria-hidden="true"></div>
+    <div id="room-panels" hidden aria-hidden="true"></div>
 
     <!-- View navigation -->
     <nav id="view-nav" role="tablist" aria-label="切換檢視">
@@ -90,11 +99,11 @@
   </div><!-- #app -->
 
   <!-- ── Booking Modal ── -->
-  <div id="book-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
+  <div id="book-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-title">
     <div class="modal" role="document">
       <div class="modal-header">
         <div>
-          <h2 id="book-modal-title">預約時段</h2>
+          <h2 id="book-title">預約時段</h2>
           <p id="book-slot-info" class="modal-sub"></p>
         </div>
         <button class="modal-close-btn" id="book-close-x" aria-label="關閉">✕</button>
@@ -135,10 +144,10 @@
   </div>
 
   <!-- ── Detail / Cancel Modal ── -->
-  <div id="detail-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+  <div id="detail-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-title">
     <div class="modal" role="document">
       <div class="modal-header">
-        <h2 id="detail-modal-title">預約詳情</h2>
+        <h2 id="detail-title">預約詳情</h2>
         <button class="modal-close-btn" id="detail-close-x" aria-label="關閉">✕</button>
       </div>
       <dl id="detail-info" class="detail-dl"></dl>

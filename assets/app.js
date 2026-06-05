@@ -539,7 +539,7 @@ function openBookModal(roomId, slot) {
   const room = cfg.rooms.find(r => r.id === roomId);
   pendingBook = { roomId, slot };
 
-  document.getElementById('book-modal-title').textContent = `預約 · ${room.name}`;
+  document.getElementById('book-title').textContent = `預約 · ${room.name}`;
   document.getElementById('book-slot-info').textContent = `${slotLabel(slot)} – ${slotEndLabel(slot)} · 今天 ${new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', month: 'long', day: 'numeric' })}`;
 
   document.getElementById('pin-field').className = 'field' + (cfg.enablePin ? '' : ' hidden');
@@ -640,7 +640,7 @@ function openDetailModal(roomId, slot, booking) {
   const room = window.APP_CONFIG.rooms.find(r => r.id === roomId);
   pendingCancel = { roomId, slot, booking };
 
-  document.getElementById('detail-modal-title').textContent = `預約詳情 · ${room.name}`;
+  document.getElementById('detail-title').textContent = `預約詳情 · ${room.name}`;
 
   const dl = document.getElementById('detail-info');
   dl.innerHTML = '';

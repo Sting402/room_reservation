@@ -37,3 +37,14 @@
   - 過去時段灰色不可點
   - 頁面顯示 Shadow IT 警告
 - Next: 更新 PRODUCTION_READINESS / RELEASE_CHECKLIST → 本地 commit → 等候人類 push/部署
+
+## [3 / 2026-06-05] Hotfix — DOM ID mismatch (index.html vs app.js)
+- State: 新 index.html 缺少 v1 app.js 所需的 5 個舊 ID；GitHub Pages CDN 可能快取舊 JS → crash。
+- Root cause: `renderHeader` in old app.js calls `getElementById('date-line')` but new index.html had no such element. Also `book-modal-title`/`detail-modal-title` didn't match goal spec `book-title`/`detail-title`.
+- Did:
+  - 在 index.html header 加入 hidden backward-compat stubs: `date-line`, `status-line`, `refresh-btn`, `room-tabs`, `room-panels`
+  - 將 `book-modal-title` → `book-title` in both index.html and app.js
+  - 將 `detail-modal-title` → `detail-title` in both files
+  - Final audit: 0 IDs used by new app.js missing from index.html
+- Result: PASS — no console errors, page renders correctly
+- Next: commit + push
