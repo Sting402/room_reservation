@@ -1,0 +1,14 @@
+# 真實設定與金鑰 — 絕不提交
+config.js
+config.public.js
+.env
+.env.local
+
+# OS / 編輯器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 依賴(若未來引入)
+node_modules/

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#15803d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>會議室預約</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-top">
+        <div class="header-title">
+          <span class="header-icon">🏢</span>
+          <h1>會議室預約</h1>
+        </div>
+        <button id="refresh-btn" class="icon-btn" title="手動重新整理" aria-label="手動重新整理">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+      <div id="date-line" class="header-date"></div>
+      <div id="shadow-warning" class="shadow-warning">
+        ⚠ Shadow IT 系統 · 請勿填寫任何機密資訊
+      </div>
+      <div id="status-line" class="status-line">載入中…</div>
+    </header>
+
+    <nav id="room-tabs" role="tablist" aria-label="選擇會議室"></nav>
+
+    <main id="room-panels"></main>
+  </div>
+
+  <!-- 預約 Modal -->
+  <div id="book-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-title">
+    <div class="modal" role="document">
+      <div class="modal-header">
+        <h2 id="book-title">預約時段</h2>
+        <p id="book-slot-info" class="slot-info"></p>
+      </div>
+      <form id="book-form" novalidate>
+        <div class="field">
+          <label for="f-owner">姓名 <span class="required" aria-label="必填">*</span></label>
+          <input id="f-owner" type="text" maxlength="20" autocomplete="name"
+            placeholder="你的姓名" required>
+        </div>
+        <div class="field">
+          <label for="f-dept">部門 <span class="required" aria-label="必填">*</span></label>
+          <input id="f-dept" type="text" maxlength="30"
+            placeholder="你的部門" required>
+        </div>
+        <div class="field">
+          <label for="f-purpose">開會事由 <span class="required" aria-label="必填">*</span></label>
+          <input id="f-purpose" type="text" maxlength="30"
+            placeholder="業務對接 / 週會 / 客戶討論 / 內部討論" required>
+          <span class="hint">上限 30 字 · 請勿填寫機密內容</span>
+        </div>
+        <div class="field" id="pin-field">
+          <label for="f-pin">取消 PIN <span class="optional">(選填)</span></label>
+          <input id="f-pin" type="tel" maxlength="4" pattern="[0-9]{4}"
+            placeholder="4 位數字，留空則不設 PIN" inputmode="numeric">
+          <span class="hint">PIN 僅防手滑誤刪，不防惡意操作</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="book-cancel-btn" class="btn btn-secondary">取消</button>
+          <button type="submit" id="book-submit-btn" class="btn btn-primary">確認預約</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 詳情 / 取消 Modal -->
+  <div id="detail-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="modal" role="document">
+      <div class="modal-header">
+        <h2 id="detail-title">預約詳情</h2>
+      </div>
+      <dl id="detail-info" class="detail-dl"></dl>
+      <div id="cancel-pin-section" class="field hidden">
+        <label for="cancel-pin-input">取消 PIN</label>
+        <input id="cancel-pin-input" type="tel" maxlength="4" pattern="[0-9]{4}"
+          placeholder="請輸入 4 位數 PIN" inputmode="numeric">
+      </div>
+      <div class="modal-actions">
+        <button id="detail-close-btn" class="btn btn-secondary">關閉</button>
+        <button id="detail-cancel-btn" class="btn btn-danger">取消預約</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 通知 -->
+  <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="config.js" onerror="window.__configMissing=true"></script>
+  <script src="assets/kv.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

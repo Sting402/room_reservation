@@ -1,0 +1,9 @@
+{
+  "redis_key": "mrs:{date}:log",
+  "note": "實作用 RPUSH 寫入 mrs:log:{date}(LIST);以下為單筆 entry 範例",
+  "entries": [
+    { "ts": "2026-06-05T09:01:22+08:00", "action": "book",   "room_id": "glass1",   "slot": "0900", "owner": "陳小明", "dept": "業務部" },
+    { "ts": "2026-06-05T10:15:04+08:00", "action": "cancel", "room_id": "showroom", "slot": "1000", "owner": "林大華", "dept": "工程部" }
+  ],
+  "privacy": "audit 不存 purpose 全文,僅留追蹤所需最小欄位"
+}

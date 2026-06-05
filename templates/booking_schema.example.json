@@ -1,0 +1,23 @@
+{
+  "key_format": "mrs:{date}:{room_id}:{slot}",
+  "example_key": "mrs:2026-06-05:glass1:0900",
+  "value": {
+    "room_id": "glass1",
+    "slot_start": "09:00",
+    "slot_end": "09:30",
+    "owner": "陳小明",
+    "dept": "業務部",
+    "purpose": "客戶討論",
+    "pin_hash": null,
+    "created_at": "2026-06-05T09:01:22+08:00",
+    "schema_v": 1
+  },
+  "validation": {
+    "owner": "trim 後非空",
+    "dept": "trim 後非空",
+    "purpose": "trim 後非空,長度 <= purposeMaxLength",
+    "room_id": "必須屬於 config.rooms",
+    "slot": "必須屬於由 config.schedule 推導的合法 slot 清單",
+    "pin_hash": "sha256(pin) 或 null"
+  }
+}
