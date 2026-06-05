@@ -7,15 +7,15 @@ window.APP_CONFIG = {
   provider: "upstash",
 
   rooms: [
-    { id: "glass1",   name: "玻璃屋 1" },
-    { id: "glass2",   name: "玻璃屋 2" },
+    { id: "glass1",   name: "大玻璃屋(左)" },
+    { id: "glass2",   name: "小玻璃屋(右)" },
     { id: "showroom", name: "展間會議室" }
   ],
 
   schedule: {
-    open: "09:00",
+    open: "08:00",
     close: "18:00",
-    granularityMinutes: 30,
+    granularityMinutes: 60,
     timezone: "Asia/Taipei"
   },
 
