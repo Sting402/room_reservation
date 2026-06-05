@@ -3,79 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#15803d">
+  <meta name="theme-color" content="#14532d">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>會議室預約</title>
+  <title>會議室狀態</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <div id="app">
-    <header id="header">
-      <div class="header-top">
-        <div class="header-title">
-          <span class="header-icon">🏢</span>
-          <h1>會議室預約</h1>
-        </div>
-        <button id="refresh-btn" class="icon-btn" title="手動重新整理" aria-label="手動重新整理">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
-      </div>
-      <div id="date-line" class="header-date"></div>
-      <div id="shadow-warning" class="shadow-warning">
-        ⚠ Shadow IT 系統 · 請勿填寫任何機密資訊
-      </div>
-      <div id="status-line" class="status-line">載入中…</div>
-    </header>
 
-    <nav id="room-tabs" role="tablist" aria-label="選擇會議室"></nav>
-
-    <main id="room-panels"></main>
+  <!-- ── Kiosk mode (replaces everything when ?kiosk=1) ── -->
+  <div id="kiosk-view" class="hidden">
+    <div class="kiosk-inner">
+      <div class="kiosk-room-name" id="kiosk-room-name"></div>
+      <div class="kiosk-status-block">
+        <span class="kiosk-icon" id="kiosk-icon"></span>
+        <span class="kiosk-status-text" id="kiosk-status-text"></span>
+      </div>
+      <div class="kiosk-booking-info" id="kiosk-booking-info"></div>
+      <div class="kiosk-next" id="kiosk-next"></div>
+      <div class="kiosk-clock" id="kiosk-clock"></div>
+      <div class="kiosk-sync" id="kiosk-sync"></div>
+    </div>
   </div>
 
-  <!-- 預約 Modal -->
-  <div id="book-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-title">
+  <!-- ── Normal app ── -->
+  <div id="app">
+
+    <header id="header">
+      <div class="header-inner">
+        <div class="header-brand">
+          <div class="header-title-row">
+            <span class="header-icon" aria-hidden="true">🏢</span>
+            <h1>會議室狀態</h1>
+          </div>
+          <p class="header-sub">今天誰在開會，一眼看清楚</p>
+        </div>
+        <div class="header-right">
+          <div id="live-clock" class="live-clock" aria-live="off"></div>
+          <div id="sync-pill" class="sync-pill sync-syncing" aria-live="polite">
+            <span class="sync-dot"></span>
+            <span class="sync-label">連線中…</span>
+          </div>
+        </div>
+      </div>
+      <div class="shadow-warning" role="alert">
+        ⚠ Shadow IT 系統 · 請勿填寫任何機密資訊
+      </div>
+    </header>
+
+    <!-- View navigation -->
+    <nav id="view-nav" role="tablist" aria-label="切換檢視">
+      <button class="nav-btn active" role="tab" aria-selected="true"  data-view="dashboard">今日狀態</button>
+      <button class="nav-btn"        role="tab" aria-selected="false" data-view="manage">管理預約</button>
+    </nav>
+
+    <!-- ── Dashboard view ── -->
+    <div id="view-dashboard" class="view active">
+
+      <section id="room-status-grid" aria-label="會議室狀態總覽"></section>
+
+      <section id="today-schedule-section">
+        <h2 class="section-heading">今日時段表</h2>
+        <div class="timeline-wrapper" id="timeline-wrapper">
+          <div class="timeline-now-line hidden" id="now-line" aria-hidden="true">
+            <span class="now-label">現在</span>
+          </div>
+          <table class="timeline-table" id="timeline-table">
+            <thead id="timeline-head"></thead>
+            <tbody id="timeline-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ── Manage view ── -->
+    <div id="view-manage" class="view hidden">
+      <div class="manage-header">
+        <h2 class="section-heading">今日預約清單</h2>
+        <button id="manage-refresh-btn" class="icon-btn-sm" aria-label="重新整理">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+      <div id="manage-list"></div>
+    </div>
+
+  </div><!-- #app -->
+
+  <!-- ── Booking Modal ── -->
+  <div id="book-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-modal-title">
     <div class="modal" role="document">
       <div class="modal-header">
-        <h2 id="book-title">預約時段</h2>
-        <p id="book-slot-info" class="slot-info"></p>
+        <div>
+          <h2 id="book-modal-title">預約時段</h2>
+          <p id="book-slot-info" class="modal-sub"></p>
+        </div>
+        <button class="modal-close-btn" id="book-close-x" aria-label="關閉">✕</button>
       </div>
-      <form id="book-form" novalidate>
+      <form id="book-form" novalidate autocomplete="off">
         <div class="field">
-          <label for="f-owner">姓名 <span class="required" aria-label="必填">*</span></label>
-          <input id="f-owner" type="text" maxlength="20" autocomplete="name"
-            placeholder="你的姓名" required>
+          <label for="f-owner">使用人 <span class="req" aria-label="必填">*</span></label>
+          <div class="input-row">
+            <input id="f-owner" type="text" maxlength="20" autocomplete="name" placeholder="你的姓名" required>
+            <button type="button" id="clear-identity-btn" class="clear-btn" title="清除記住的資料">清除</button>
+          </div>
         </div>
         <div class="field">
-          <label for="f-dept">部門 <span class="required" aria-label="必填">*</span></label>
-          <input id="f-dept" type="text" maxlength="30"
-            placeholder="你的部門" required>
+          <label for="f-dept">部門 <span class="req" aria-label="必填">*</span></label>
+          <input id="f-dept" type="text" maxlength="30" placeholder="你的部門" required>
         </div>
         <div class="field">
-          <label for="f-purpose">開會事由 <span class="required" aria-label="必填">*</span></label>
+          <label for="f-purpose">
+            用途 <span class="req" aria-label="必填">*</span>
+            <span class="char-counter"><span id="purpose-count">0</span>/30</span>
+          </label>
           <input id="f-purpose" type="text" maxlength="30"
             placeholder="業務對接 / 週會 / 客戶討論 / 內部討論" required>
-          <span class="hint">上限 30 字 · 請勿填寫機密內容</span>
+          <span class="hint">請勿填寫機密內容</span>
         </div>
         <div class="field" id="pin-field">
-          <label for="f-pin">取消 PIN <span class="optional">(選填)</span></label>
+          <label for="f-pin">取消 PIN <span class="optional">(選填，4 位數)</span></label>
           <input id="f-pin" type="tel" maxlength="4" pattern="[0-9]{4}"
-            placeholder="4 位數字，留空則不設 PIN" inputmode="numeric">
-          <span class="hint">PIN 僅防手滑誤刪，不防惡意操作</span>
+            placeholder="留空則不設 PIN" inputmode="numeric">
+          <span class="hint">僅防手滑誤刪，不防惡意操作</span>
         </div>
         <div class="modal-actions">
-          <button type="button" id="book-cancel-btn" class="btn btn-secondary">取消</button>
-          <button type="submit" id="book-submit-btn" class="btn btn-primary">確認預約</button>
+          <button type="button" id="book-cancel-btn" class="btn btn-ghost">取消</button>
+          <button type="submit"  id="book-submit-btn" class="btn btn-primary">確認預約</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 詳情 / 取消 Modal -->
-  <div id="detail-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <!-- ── Detail / Cancel Modal ── -->
+  <div id="detail-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
     <div class="modal" role="document">
       <div class="modal-header">
-        <h2 id="detail-title">預約詳情</h2>
+        <h2 id="detail-modal-title">預約詳情</h2>
+        <button class="modal-close-btn" id="detail-close-x" aria-label="關閉">✕</button>
       </div>
       <dl id="detail-info" class="detail-dl"></dl>
       <div id="cancel-pin-section" class="field hidden">
@@ -84,13 +148,13 @@
           placeholder="請輸入 4 位數 PIN" inputmode="numeric">
       </div>
       <div class="modal-actions">
-        <button id="detail-close-btn" class="btn btn-secondary">關閉</button>
+        <button id="detail-close-btn" class="btn btn-ghost">關閉</button>
         <button id="detail-cancel-btn" class="btn btn-danger">取消預約</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast 通知 -->
+  <!-- ── Toast ── -->
   <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <script src="config.js" onerror="window.__configMissing=true"></script>

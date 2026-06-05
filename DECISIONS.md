@@ -35,4 +35,13 @@
 ## #011 2026-06-05 — config.js 以 onerror 捕捉載入失敗,顯示設定引導畫面
 理由:GitHub Pages 沒有 config.js 時頁面仍可載入並顯示友善說明,不爆 JS error。狀態:Accepted。
 
+## #012 2026-06-05 — UI/UX 升級：V1 採單一 30 分 slot 預約
+理由：多 slot 連續預約需要 Lua EVAL 原子化，複雜度高；V1 先用單 slot 確保穩定性，KV adapter 不需改動。多 slot 列入 ROADMAP。狀態：Accepted。
+
+## #013 2026-06-05 — 移除 overlay backdrop-filter
+理由：backdrop-filter: blur() 在部分渲染環境（headless Chromium）造成截圖/渲染 hang；移除後功能不受影響，視覺差異極小。狀態：Accepted。
+
+## #014 2026-06-05 — Header backdrop-filter 同步移除
+理由：同上，與 #013 一致避免潛在渲染問題；frosted glass 效果以純 rgba 背景替代。狀態：Accepted。
+
 <!-- Claude Code 在此往下追加新決策 -->
