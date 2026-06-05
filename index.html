@@ -147,17 +147,33 @@
         <div class="field">
           <label for="f-owner">姓名 <span class="req" aria-label="必填">*</span></label>
           <div class="input-row">
-            <input id="f-owner" type="text" maxlength="20" autocomplete="given-name"
+            <input id="f-owner" type="text" maxlength="30" autocomplete="given-name"
               placeholder="請輸入名字，例如 Steven；若重名請輸入 Alex C" required>
             <button type="button" id="clear-identity-btn" class="clear-btn" title="清除記住的資料">清除</button>
           </div>
           <span class="hint">名字即可；若有同名請加姓氏縮寫（如 Alex C）</span>
         </div>
 
-        <!-- Title (optional) -->
+        <!-- Department (required) -->
         <div class="field">
-          <label for="f-title">會議主題 <span class="optional">(選填)</span></label>
-          <input id="f-title" type="text" maxlength="50" placeholder="週會 / 業務對接 / 客戶討論…">
+          <label for="f-dept">部門 <span class="req" aria-label="必填">*</span></label>
+          <select id="f-dept" required>
+            <option value="">請選擇部門</option>
+          </select>
+        </div>
+
+        <!-- Project / Region (required) -->
+        <div class="field">
+          <label for="f-project">區域 / 專案 <span class="req" aria-label="必填">*</span></label>
+          <input id="f-project" type="text" maxlength="40"
+            placeholder="例如：北部客戶 / Q3 策略 / 內部討論" required>
+          <span class="hint">請勿填寫機密專案名稱或敏感資訊</span>
+        </div>
+
+        <!-- Purpose / Category (required) -->
+        <div class="field">
+          <label for="f-title">事由 / 類型 <span class="req" aria-label="必填">*</span></label>
+          <input id="f-title" type="text" maxlength="40" placeholder="週會 / 業務對接 / 客戶討論…" required>
         </div>
 
         <!-- People (optional) -->
@@ -170,7 +186,7 @@
         <div class="field">
           <label for="f-notes">備註 <span class="optional">(選填)</span></label>
           <input id="f-notes" type="text" maxlength="100" placeholder="特殊需求 / 設備需求…">
-          <span class="hint">請勿填寫機密內容</span>
+          <span class="hint">請勿填寫機密或敏感資訊</span>
         </div>
 
         <!-- PIN (optional) -->
@@ -196,6 +212,23 @@
         <h2 id="detail-title">預約詳情</h2>
         <button class="modal-close-btn" id="detail-close-x" aria-label="關閉">✕</button>
       </div>
+
+      <!-- ── Meeting-in-use door card ── -->
+      <div id="meeting-card" class="meeting-card hidden">
+        <div class="meeting-card-status">
+          <span class="meeting-card-dot"></span>
+          MEETING IN USE &nbsp;·&nbsp; 會議使用中
+        </div>
+        <div class="meeting-card-reminder">溫馨提醒：看到此預約牌，請勿使用</div>
+        <dl class="meeting-card-dl">
+          <div class="mc-row"><dt>部門</dt><dd id="mc-dept"></dd></div>
+          <div class="mc-row"><dt>日期</dt><dd id="mc-date"></dd></div>
+          <div class="mc-row"><dt>時間</dt><dd id="mc-time"></dd></div>
+          <div class="mc-row"><dt>區域 / 專案</dt><dd id="mc-project"></dd></div>
+        </dl>
+      </div>
+
+      <!-- Standard detail DL (always shown) -->
       <dl id="detail-info" class="detail-dl"></dl>
 
       <!-- Cancel reason (always shown when cancel is available) -->
