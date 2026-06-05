@@ -17,6 +17,14 @@
 - [x] (J) smoke test 全 PASS + PRODUCTION_READINESS + release_report 完成
 
 ## 剩餘(等候人類)
-- [ ] 人類在 Upstash 建 DB → 填 config.js(restUrl/restToken) → 改 provider="upstash"
+- [x] 人類在 Upstash 建 DB → 填 config.js(restUrl/restToken) → 改 provider="upstash" ✅
 - [ ] 人類建 GitHub repo → push → 啟用 Pages
-- [ ] 人類列印 QR Code 貼門口
+- [ ] 人類列印 QR Code 貼門口（含 ?room= deep-link 各一張）
+
+## v3 完成項目
+- [x] selectedDate 全年日期選擇
+- [x] 日期選擇器 UI（今天/明天快捷鈕）
+- [x] 過去日期唯讀
+- [x] 未來日期全時段可預約
+- [x] audit log 含 date 欄位
+- [x] 0 console errors 驗證通過

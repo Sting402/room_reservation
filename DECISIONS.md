@@ -44,4 +44,16 @@
 ## #014 2026-06-05 — Header backdrop-filter 同步移除
 理由：同上，與 #013 一致避免潛在渲染問題；frosted glass 效果以純 rgba 背景替代。狀態：Accepted。
 
+## #015 2026-06-05 — 升級至本年度任意日期預約（v3）
+理由：原本的 todayDate-only 架構已足夠 MVP，但真實使用需要提前預約。key 格式 mrs:{date}:{room_id}:{slot} 天生支援任意日期，只需在 app.js 引入 selectedDate 概念即可，無需資料遷移。狀態：Accepted。
+
+## #016 2026-06-05 — 過去日期僅供查閱，不允許新增/取消
+理由：避免預約過去已發生的時段造成混淆；審計完整性。狀態：Accepted。
+
+## #017 2026-06-05 — selectedDate 存於 localStorage，預設今天
+理由：使用者重整後保留上次瀏覽的日期，提升體驗；若 localStorage 值無效或跨年則 fallback 到今天。狀態：Accepted。
+
+## #018 2026-06-05 — 不實作全年曆格，採 <input type="date">
+理由：規格明確說「不要建全年曆格除非已經很容易」；日期 input 原生支援 min/max 且手機鍵盤友善。狀態：Accepted。
+
 <!-- Claude Code 在此往下追加新決策 -->

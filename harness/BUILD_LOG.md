@@ -48,3 +48,17 @@
   - Final audit: 0 IDs used by new app.js missing from index.html
 - Result: PASS — no console errors, page renders correctly
 - Next: commit + push
+
+## [4 / 2026-06-05] v3 全年日期升級
+- State: selectedDate = todayDate only；無法預約未來日期。
+- Did:
+  - app.js: 引入 selectedDate 狀態；新增 getCurrentYearRange / isValidDateInCurrentYear / compareDateToToday / isSlotPast / loadSavedDate / saveSelectedDate / getTomorrowDate / initDatePicker / onDateChange / updateDateDisplay
+  - index.html: 加入 date-selector-bar（date input + 今天/明天按鈕 + 日期標籤）
+  - style.css: 加入 date-selector-bar / date-input / date-quick-btn / date-label / slot-past-date 樣式
+  - load() / submitBook() / submitCancel() / appendLog() 全部改用 selectedDate
+  - 過去日期：卡片 state-closed、時段全禁、取消按鈕隱藏
+  - 未來日期：時段全綠、不顯示已過、now-line 隱藏
+  - 今天：原有時間感知邏輯保留
+  - audit log entry 新增 date 欄位
+- Result: PASS — 0 console errors; future/past/today 三態驗證正確
+- Next: 更新 PRODUCT_SPEC / DATA_MODEL / DECISIONS → commit

@@ -7,7 +7,8 @@
 ```
 mrs:{date}:{room_id}:{slot}
 範例: mrs:2026-06-05:glass1:0900
-date : Asia/Taipei YYYY-MM-DD
+      mrs:2026-09-18:showroom:1430
+date : Asia/Taipei YYYY-MM-DD  ← selectedDate（可為本年任意日期）
 room_id : glass1 | glass2 | showroom
 slot : 0900 0930 ... 1730 (由 config 的 open/close/granularity 推導)
 audit key: mrs:log:{date}  (Redis LIST, RPUSH)
@@ -42,7 +43,16 @@ audit key: mrs:log:{date}  (Redis LIST, RPUSH)
 4. 取消:先比 PIN(若該 booking 有 pin_hash),不符回 `reason:'pin'`;相符 `DEL` + 寫 audit。
 
 ## 過期 / 清理
-MVP 不主動清理。前端只讀「今天」的 key,昨天資料自然不被顯示。可選 hardened:`EXPIRE` 至當日 23:59 自動回收。
+MVP 不主動清理。前端以 `selectedDate` 為 key 讀取，不同日期的資料互相獨立，舊資料不影響其他日期查閱。
+Upstash 免費方案 256 MB；一年 365 天 × 3 房 × 最多 10 格 ≈ 10,950 筆，每筆 ≈ 300B → ~3.3 MB，遠低於上限。
+可選 hardened：以 `EXPIRE` 設定 key 在年底後自動回收。
+
+## Audit log
+```
+mrs:log:{date}  (Redis LIST, RPUSH)
+```
+每筆 entry 包含：`ts, date, action(book|cancel), room_id, slot, owner, dept`。
+注意：不存 purpose 全文以降低洩漏面。
 
 ## 驗證(每條寫入路徑必做)
 - book:欄位非空、purpose 長度、slot 屬於合法 slot 清單、room 屬於合法 rooms。

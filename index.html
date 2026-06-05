@@ -68,6 +68,16 @@
     <!-- ── Dashboard view ── -->
     <div id="view-dashboard" class="view active">
 
+      <!-- Date selector bar -->
+      <div id="date-selector-bar" class="date-selector-bar">
+        <div class="date-selector-row">
+          <input type="date" id="date-input" class="date-input" aria-label="選擇日期">
+          <button id="btn-today"    class="date-quick-btn">今天</button>
+          <button id="btn-tomorrow" class="date-quick-btn">明天</button>
+        </div>
+        <div id="date-label" class="date-label" aria-live="polite"></div>
+      </div>
+
       <section id="room-status-grid" aria-label="會議室狀態總覽"></section>
 
       <section id="today-schedule-section">

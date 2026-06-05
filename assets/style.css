@@ -202,6 +202,76 @@ h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: .01em; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Date selector bar
+   ═══════════════════════════════════════════════════════════════ */
+.date-selector-bar {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.date-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.date-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--card-bg);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+  transition: border-color var(--t-fast);
+}
+.date-input:focus { border-color: var(--green-dark); }
+.date-quick-btn {
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 44px;
+  font-family: var(--font);
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.date-quick-btn:hover { background: var(--gray-light); border-color: var(--green-dark); }
+.date-quick-btn.active { background: var(--green-light); border-color: var(--green-dark); color: var(--green-dark); }
+
+.date-label {
+  margin-top: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-height: 1.2em;
+}
+.date-label.is-today   { color: var(--green-dark); }
+.date-label.is-future  { color: var(--blue); }
+.date-label.is-past    { color: var(--red-dark); }
+
+/* Past-date read-only overlay indicator on slot rows */
+.slot-cell.slot-past-date {
+  background: var(--gray-light);
+  color: var(--gray);
+  cursor: default;
+  opacity: .6;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Room Status Cards
    ═══════════════════════════════════════════════════════════════ */
 #room-status-grid {
