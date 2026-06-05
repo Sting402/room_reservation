@@ -10,7 +10,7 @@
 </head>
 <body>
 
-  <!-- ── Kiosk mode (replaces everything when ?kiosk=1) ── -->
+  <!-- ── Kiosk mode ── -->
   <div id="kiosk-view" class="hidden">
     <div class="kiosk-inner">
       <div class="kiosk-room-name" id="kiosk-room-name"></div>
@@ -48,14 +48,11 @@
       <div class="shadow-warning" role="alert">
         ⚠ Shadow IT 系統 · 請勿填寫任何機密資訊
       </div>
-      <!-- Backward-compat stubs: old v1 app.js uses these IDs.
-           Hidden so they never render; new app.js ignores them.
-           Prevents null-dereference crash when browser caches old JS. -->
+      <!-- Backward-compat stubs -->
       <span id="date-line"   hidden aria-hidden="true"></span>
       <span id="status-line" hidden aria-hidden="true"></span>
       <button id="refresh-btn" hidden aria-hidden="true" tabindex="-1"></button>
     </header>
-    <!-- Backward-compat containers for old tab/panel architecture -->
     <div id="room-tabs"   hidden aria-hidden="true"></div>
     <div id="room-panels" hidden aria-hidden="true"></div>
 
@@ -63,12 +60,12 @@
     <nav id="view-nav" role="tablist" aria-label="切換檢視">
       <button class="nav-btn active" role="tab" aria-selected="true"  data-view="dashboard">今日狀態</button>
       <button class="nav-btn"        role="tab" aria-selected="false" data-view="manage">管理預約</button>
+      <button class="nav-btn"        role="tab" aria-selected="false" data-view="week">本週一覽</button>
     </nav>
 
     <!-- ── Dashboard view ── -->
     <div id="view-dashboard" class="view active">
 
-      <!-- Date selector bar -->
       <div id="date-selector-bar" class="date-selector-bar">
         <div class="date-selector-row">
           <input type="date" id="date-input" class="date-input" aria-label="選擇日期">
@@ -98,12 +95,24 @@
     <!-- ── Manage view ── -->
     <div id="view-manage" class="view hidden">
       <div class="manage-header">
-        <h2 class="section-heading">今日預約清單</h2>
-        <button id="manage-refresh-btn" class="icon-btn-sm" aria-label="重新整理">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
+        <h2 class="section-heading">預約清單</h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button id="export-today-btn" class="btn btn-sm btn-secondary" title="匯出今日預約為 CSV">匯出今日 CSV</button>
+          <button id="export-week-btn"  class="btn btn-sm btn-secondary" title="匯出本週預約為 CSV">匯出本週 CSV</button>
+          <button id="manage-refresh-btn" class="icon-btn-sm" aria-label="重新整理">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
       </div>
       <div id="manage-list"></div>
+    </div>
+
+    <!-- ── This-week view ── -->
+    <div id="view-week" class="view hidden">
+      <div class="manage-header">
+        <h2 class="section-heading">本週預約一覽</h2>
+      </div>
+      <div id="week-list"></div>
     </div>
 
   </div><!-- #app -->
@@ -119,32 +128,65 @@
         <button class="modal-close-btn" id="book-close-x" aria-label="關閉">✕</button>
       </div>
       <form id="book-form" novalidate autocomplete="off">
+
+        <!-- Duration (required) -->
         <div class="field">
-          <label for="f-owner">使用人 <span class="req" aria-label="必填">*</span></label>
+          <label for="f-duration">預約時長 <span class="req" aria-label="必填">*</span></label>
+          <select id="f-duration" required>
+            <option value="1h">1 小時</option>
+            <option value="2h">2 小時</option>
+            <option value="3h">3 小時</option>
+            <option value="4h">4 小時</option>
+            <option value="morning_half">上午半天（08:00–12:00）</option>
+            <option value="afternoon_half">下午半天（13:00–18:00）</option>
+            <option value="full_day">全天（08:00–18:00）</option>
+          </select>
+        </div>
+
+        <!-- Booker (required) -->
+        <div class="field">
+          <label for="f-owner">預約人 <span class="req" aria-label="必填">*</span></label>
           <div class="input-row">
             <input id="f-owner" type="text" maxlength="20" autocomplete="name" placeholder="你的姓名" required>
             <button type="button" id="clear-identity-btn" class="clear-btn" title="清除記住的資料">清除</button>
           </div>
         </div>
+
+        <!-- Department dropdown (required) -->
         <div class="field">
           <label for="f-dept">部門 <span class="req" aria-label="必填">*</span></label>
-          <input id="f-dept" type="text" maxlength="30" placeholder="你的部門" required>
+          <select id="f-dept" required>
+            <option value="">請選擇部門</option>
+          </select>
         </div>
+
+        <!-- Title (optional) -->
         <div class="field">
-          <label for="f-purpose">
-            用途 <span class="req" aria-label="必填">*</span>
-            <span class="char-counter"><span id="purpose-count">0</span>/30</span>
-          </label>
-          <input id="f-purpose" type="text" maxlength="30"
-            placeholder="業務對接 / 週會 / 客戶討論 / 內部討論" required>
+          <label for="f-title">會議主題 <span class="optional">(選填)</span></label>
+          <input id="f-title" type="text" maxlength="50" placeholder="週會 / 業務對接 / 客戶討論…">
+        </div>
+
+        <!-- People (optional) -->
+        <div class="field">
+          <label for="f-people">人數 <span class="optional">(選填)</span></label>
+          <input id="f-people" type="number" min="1" max="100" placeholder="出席人數">
+        </div>
+
+        <!-- Notes (optional) -->
+        <div class="field">
+          <label for="f-notes">備註 <span class="optional">(選填)</span></label>
+          <input id="f-notes" type="text" maxlength="100" placeholder="特殊需求 / 設備需求…">
           <span class="hint">請勿填寫機密內容</span>
         </div>
+
+        <!-- PIN (optional) -->
         <div class="field" id="pin-field">
           <label for="f-pin">取消 PIN <span class="optional">(選填，4 位數)</span></label>
           <input id="f-pin" type="tel" maxlength="4" pattern="[0-9]{4}"
             placeholder="留空則不設 PIN" inputmode="numeric">
           <span class="hint">僅防手滑誤刪，不防惡意操作</span>
         </div>
+
         <div class="modal-actions">
           <button type="button" id="book-cancel-btn" class="btn btn-ghost">取消</button>
           <button type="submit"  id="book-submit-btn" class="btn btn-primary">確認預約</button>
@@ -161,13 +203,22 @@
         <button class="modal-close-btn" id="detail-close-x" aria-label="關閉">✕</button>
       </div>
       <dl id="detail-info" class="detail-dl"></dl>
+
+      <!-- Cancel reason (always shown when cancel is available) -->
+      <div id="cancel-reason-section" class="field">
+        <label for="cancel-reason-input">取消原因 <span class="req">*</span></label>
+        <input id="cancel-reason-input" type="text" maxlength="100" placeholder="請填寫取消原因">
+      </div>
+
       <div id="cancel-pin-section" class="field hidden">
         <label for="cancel-pin-input">取消 PIN</label>
         <input id="cancel-pin-input" type="tel" maxlength="4" pattern="[0-9]{4}"
           placeholder="請輸入 4 位數 PIN" inputmode="numeric">
       </div>
+
       <div class="modal-actions">
         <button id="detail-close-btn" class="btn btn-ghost">關閉</button>
+        <button id="detail-edit-btn"  class="btn btn-secondary">編輯</button>
         <button id="detail-cancel-btn" class="btn btn-danger">取消預約</button>
       </div>
     </div>
