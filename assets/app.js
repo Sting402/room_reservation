@@ -456,6 +456,10 @@ function renderTimeline() {
   slots.forEach(slot => {
     const sm        = slotToMins(slot);
     const past      = isSlotPast(slot);
+
+    // Today: skip fully-passed slots — no need to clutter UI with 已過 rows
+    if (rel === 'today' && past) return;
+
     const isCurrent = rel === 'today' && sm <= nowM && nowM < sm + cfg.schedule.granularityMinutes;
 
     const tr = document.createElement('tr');

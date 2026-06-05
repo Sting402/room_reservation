@@ -62,3 +62,9 @@
   - audit log entry 新增 date 欄位
 - Result: PASS — 0 console errors; future/past/today 三態驗證正確
 - Next: 更新 PRODUCT_SPEC / DATA_MODEL / DECISIONS → commit
+
+## [5 / 2026-06-05] 過去時段隱藏（今日視圖清理）
+- State: 今日視圖中顯示所有過去時段（09:00~15:00）標示「已過」，干擾使用。
+- Did: renderTimeline() 加一行 early return — 當 selectedDate 為今天且 isSlotPast(slot)，跳過該 row。未來日期/過去日期行為不受影響。
+- Result: PASS — 今天只顯示 16:00、17:00（2 rows）；明天顯示全 9 rows；過去日期顯示全 9 rows read-only
+- Next: commit
