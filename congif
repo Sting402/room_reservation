@@ -1,0 +1,44 @@
+// config.js — 本機設定(已 .gitignore,勿提交)
+// 參考 templates/config.example.js
+
+window.APP_CONFIG = {
+  // "local" = 瀏覽器 LocalStorage(單機測試用)
+  // "upstash" = Upstash Redis REST(真正跨裝置同步)
+  provider: "upstash",
+
+  rooms: [
+    { id: "glass1",   name: "大玻璃屋(左)" },
+    { id: "glass2",   name: "小玻璃屋(右)" },
+    { id: "showroom", name: "展間會議室" }
+  ],
+
+  schedule: {
+    open: "08:00",
+    close: "18:00",
+    granularityMinutes: 60,
+    timezone: "Asia/Taipei"
+  },
+
+  pollIntervalSeconds: 10,
+  purposeMaxLength: 30,
+  enablePin: true,
+
+  // ── Name identity (optional; set aliasesEnabled: false to skip lookup) ──
+  // Users type first name only. If duplicate first names exist, add last initial.
+  // Normalization: English names are case-insensitive and space-insensitive.
+  //   "alex c", "AlexC", "ALEX C" all resolve to the same person.
+  // Chinese names match exact characters after trimming.
+  identity: {
+    aliasesEnabled: true,
+    aliases: [
+      // { displayName: "Alex C", aliases: ["Alex C"] },
+      // { displayName: "Alex W", aliases: ["Alex W"] }
+    ]
+  },
+
+  // 填入真實值後將 provider 改為 "upstash"
+  upstash: {
+    restUrl:   "https://united-camel-78901.upstash.io",
+    restToken: "gQAAAAAAATQ1AAIgcDJhZDYyODVjNjQ2M2U0Y2U5YjlkYzY5MDY2ZTUzYmVmYw"
+  }
+};
