@@ -1237,6 +1237,67 @@ h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; let
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Layer 2 — Motion (View Transitions + spring entrances)
+   All effects inside @supports or capability-checked in JS.
+   Falls through silently when API is unavailable.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Spring entrance for room cards on render */
+@supports (animation-name: spring-in) { /* always true — just a namespace fence */ }
+@keyframes spring-in {
+  0%   { opacity: 0; transform: translateY(10px) scale(.97); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0)  scale(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Room cards get staggered spring entrance */
+@media (prefers-reduced-motion: no-preference) {
+  .room-card {
+    animation: spring-in 380ms cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .room-card:nth-child(1) { animation-delay:   0ms; }
+  .room-card:nth-child(2) { animation-delay:  60ms; }
+  .room-card:nth-child(3) { animation-delay: 120ms; }
+
+  /* Ribbon blocks fade up when rendered */
+  .ribbon-block {
+    animation: fade-up 250ms cubic-bezier(.4,0,.2,1) both;
+  }
+
+  /* Modal entrance */
+  .modal {
+    animation: spring-in 300ms cubic-bezier(.34,1.56,.64,1) both;
+  }
+}
+
+/* View Transitions API — cross-fade for modal overlay */
+@supports (view-transition-name: none) {
+  .overlay { view-transition-name: modal-overlay; }
+  .modal   { view-transition-name: modal-panel; }
+
+  ::view-transition-old(modal-overlay),
+  ::view-transition-new(modal-overlay) {
+    animation-duration: 200ms;
+    animation-timing-function: ease;
+  }
+  ::view-transition-old(modal-panel) {
+    animation: 180ms ease both slide-up-out;
+  }
+  ::view-transition-new(modal-panel) {
+    animation: 220ms cubic-bezier(.34,1.56,.64,1) both spring-in;
+  }
+}
+
+@keyframes slide-up-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-8px) scale(.98); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Reduced motion
    ═══════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

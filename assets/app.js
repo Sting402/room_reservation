@@ -1422,10 +1422,26 @@ function saveIdentity(owner, dept, project_region) {
 }
 
 // ─── Overlay helpers ──────────────────────────────────────────────────────
-function showOverlay(id) { document.getElementById(id).classList.remove('hidden'); document.body.classList.add('modal-open'); }
+// Layer 2: View Transitions API wrapper — falls through if unsupported
+function withTransition(fn) {
+  if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.startViewTransition(fn);
+  } else {
+    fn();
+  }
+}
+
+function showOverlay(id) {
+  withTransition(() => {
+    document.getElementById(id).classList.remove('hidden');
+    document.body.classList.add('modal-open');
+  });
+}
 function hideOverlay(id) {
-  document.getElementById(id).classList.add('hidden');
-  document.body.classList.remove('modal-open');
+  withTransition(() => {
+    document.getElementById(id).classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  });
   pendingBook = null; pendingCancel = null;
 }
 
