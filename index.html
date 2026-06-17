@@ -9,22 +9,44 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css?v=l2">
+  <link rel="stylesheet" href="assets/style.css?v=l3">
 </head>
 <body>
 
   <!-- ── Kiosk mode ── -->
-  <div id="kiosk-view" class="hidden">
+  <div id="kiosk-view" class="hidden" role="status" aria-live="polite">
     <div class="kiosk-inner">
-      <div class="kiosk-room-name" id="kiosk-room-name"></div>
-      <div class="kiosk-status-block">
-        <span class="kiosk-icon" id="kiosk-icon"></span>
-        <span class="kiosk-status-text" id="kiosk-status-text"></span>
+
+      <header class="kiosk-header">
+        <div class="kiosk-room-name" id="kiosk-room-name"></div>
+        <div class="kiosk-sync" id="kiosk-sync"></div>
+      </header>
+
+      <main class="kiosk-center">
+        <div class="kiosk-icon-wrap">
+          <span class="kiosk-icon" id="kiosk-icon" aria-hidden="true"></span>
+        </div>
+        <div class="kiosk-status-text" id="kiosk-status-text"></div>
+        <div class="kiosk-until" id="kiosk-until"></div>
+      </main>
+
+      <!-- Meeting context — shown for busy/soon -->
+      <div class="kiosk-context hidden" id="kiosk-context">
+        <div class="kiosk-context-row" id="kiosk-dept-row">
+          <span class="kiosk-context-label">部門</span>
+          <span class="kiosk-context-value" id="kiosk-dept"></span>
+        </div>
+        <div class="kiosk-context-row" id="kiosk-project-row">
+          <span class="kiosk-context-label">區域 / 專案</span>
+          <span class="kiosk-context-value" id="kiosk-project"></span>
+        </div>
       </div>
-      <div class="kiosk-booking-info" id="kiosk-booking-info"></div>
-      <div class="kiosk-next" id="kiosk-next"></div>
-      <div class="kiosk-clock" id="kiosk-clock"></div>
-      <div class="kiosk-sync" id="kiosk-sync"></div>
+
+      <footer class="kiosk-footer">
+        <div class="kiosk-next" id="kiosk-next"></div>
+        <div class="kiosk-clock" id="kiosk-clock"></div>
+      </footer>
+
     </div>
   </div>
 

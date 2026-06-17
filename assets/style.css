@@ -1067,31 +1067,128 @@ h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; let
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 /* ═══════════════════════════════════════════════════════════════
-   Kiosk mode
+   Kiosk mode — Layer 3 full-bleed state display
    ═══════════════════════════════════════════════════════════════ */
 #kiosk-view {
   position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--color-bg-page);
+  display: flex;
+  background: var(--kiosk-bg, #1a1a1a);
+  transition: background 500ms ease;
 }
 #kiosk-view.hidden { display: none; }
 #app.hidden { display: none; }
 
-.kiosk-inner { text-align: center; padding: 32px 24px; width: 100%; max-width: 600px; }
-.kiosk-room-name { font-size: 2rem; font-weight: 800; color: var(--color-text-main); margin-bottom: 20px; }
-.kiosk-status-block { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px; }
-.kiosk-icon { font-size: 3.5rem; line-height: 1; }
-.kiosk-status-text { font-size: 2.2rem; font-weight: 800; line-height: 1.15; text-align: left; }
-.kiosk-booking-info { font-size: 1.2rem; color: var(--color-text-subtle); margin-bottom: 10px; min-height: 1.5em; }
-.kiosk-next  { font-size: 1rem; color: var(--color-text-subtle); margin-bottom: 28px; min-height: 1.5em; }
-.kiosk-clock { font-size: 3rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .03em; color: var(--color-text-main); margin-bottom: 12px; }
-.kiosk-sync  { font-size: .8rem; color: var(--color-text-muted); }
-.kiosk-inner.state-available { --kiosk-color: #24745C; }
-.kiosk-inner.state-busy      { --kiosk-color: var(--color-brand-red); }
-.kiosk-inner.state-soon      { --kiosk-color: #B45309; }
-.kiosk-inner.state-closed    { --kiosk-color: #9AA3AA; }
-.kiosk-status-text { color: var(--kiosk-color, var(--color-text-main)); }
-.kiosk-icon        { color: var(--kiosk-color, var(--color-text-main)); }
+/* Full-bleed state backgrounds */
+.kiosk-inner.state-available { --kiosk-bg: #0f2d22; --kiosk-accent: #34d399; --kiosk-fg: #f0fdf4; --kiosk-muted: rgba(240,253,244,.55); }
+.kiosk-inner.state-busy      { --kiosk-bg: #2a0a0a; --kiosk-accent: #f87171; --kiosk-fg: #fff1f2; --kiosk-muted: rgba(255,241,242,.55); }
+.kiosk-inner.state-soon      { --kiosk-bg: #271a04; --kiosk-accent: #fbbf24; --kiosk-fg: #fffbeb; --kiosk-muted: rgba(255,251,235,.55); }
+.kiosk-inner.state-closed    { --kiosk-bg: #111417; --kiosk-accent: #94a3b8; --kiosk-fg: #f1f5f9; --kiosk-muted: rgba(241,245,249,.45); }
+
+/* Grain overlay — carries into the full-bleed background */
+#kiosk-view::after {
+  content: ''; pointer-events: none;
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.035;
+}
+
+.kiosk-inner {
+  background: var(--kiosk-bg, #1a1a1a);
+  color: var(--kiosk-fg, #f8f8f8);
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+  padding: clamp(24px, 5vw, 64px) clamp(24px, 6vw, 80px);
+  transition: background 500ms ease, color 500ms ease;
+}
+
+/* ── Header ── */
+.kiosk-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: auto;
+}
+.kiosk-room-name {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400; line-height: 1.1;
+  color: var(--kiosk-fg);
+}
+.kiosk-sync {
+  font-size: .8rem; color: var(--kiosk-muted);
+  padding-top: .4em;
+}
+
+/* ── Center (the big state display) ── */
+.kiosk-center {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: clamp(8px, 2vw, 20px);
+  margin: auto 0;
+}
+.kiosk-icon-wrap { line-height: 1; }
+.kiosk-icon {
+  font-size: clamp(3rem, 10vw, 7rem);
+  color: var(--kiosk-accent);
+  display: block;
+}
+.kiosk-status-text {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 12vw, 9rem);
+  font-weight: 400; line-height: 1;
+  color: var(--kiosk-fg);
+}
+.kiosk-until {
+  font-size: clamp(1.1rem, 3.5vw, 2.2rem);
+  color: var(--kiosk-accent);
+  font-weight: 600; letter-spacing: .01em;
+  min-height: 1.5em;
+}
+
+/* ── Context (dept / project) shown for busy / soon ── */
+.kiosk-context {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: clamp(12px, 3vw, 28px);
+  padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 28px);
+  border-left: 3px solid var(--kiosk-accent);
+  background: rgba(255,255,255,.06);
+  border-radius: 0 8px 8px 0;
+}
+.kiosk-context.hidden { display: none; }
+.kiosk-context-row { display: flex; gap: 12px; align-items: baseline; }
+.kiosk-context-label {
+  font-size: clamp(.75rem, 1.8vw, .9rem);
+  color: var(--kiosk-muted); min-width: 72px; flex-shrink: 0;
+}
+.kiosk-context-value {
+  font-size: clamp(.9rem, 2.2vw, 1.15rem);
+  color: var(--kiosk-fg); font-weight: 500;
+}
+
+/* ── Footer ── */
+.kiosk-footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-top: auto; padding-top: 24px;
+}
+.kiosk-next {
+  font-size: clamp(.85rem, 2vw, 1.1rem);
+  color: var(--kiosk-muted);
+  min-height: 1.5em;
+}
+.kiosk-clock {
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  letter-spacing: .03em; color: var(--kiosk-fg);
+}
+
+/* ── Motion (capability-gated + prefers-reduced-motion-safe) ── */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (view-transition-name: none) {
+    .kiosk-inner { view-transition-name: kiosk-bg; }
+    ::view-transition-old(kiosk-bg) { animation: kiosk-fade-out 400ms ease forwards; }
+    ::view-transition-new(kiosk-bg) { animation: kiosk-fade-in  400ms ease forwards; }
+  }
+  @keyframes kiosk-fade-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes kiosk-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Layer 1 — Time-ribbon (Gantt-style horizontal lanes)

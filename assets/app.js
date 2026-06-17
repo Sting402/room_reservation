@@ -343,19 +343,44 @@ function renderKiosk(kioskDate) {
   selectedDate = kioskDate || getTaipeiDate();
   const status = getRoomStatus(kioskRoomId);
   selectedDate = savedSel;
-  document.getElementById('kiosk-room-name').textContent   = room.name;
-  document.getElementById('kiosk-icon').textContent        = status.icon;
-  document.getElementById('kiosk-status-text').textContent = status.text;
-  let infoText = '', nextText = '';
-  if (status.state === 'busy' && status.booking) {
-    infoText = '會議進行中';
+
+  document.getElementById('kiosk-room-name').textContent = room.name;
+  document.getElementById('kiosk-icon').textContent      = status.icon;
+  document.getElementById('kiosk-status-text').textContent = stateLabel(status.state);
+
+  // "until" line — end time for busy, free-slot count for available, empty otherwise
+  let untilText = '';
+  if (status.state === 'busy')      untilText = status.text; // "使用中，到 HH:MM"
+  else if (status.state === 'soon') untilText = status.text; // "HH:MM 即將開始"
+  else if (status.state === 'available' && status.sub) untilText = status.sub;
+  document.getElementById('kiosk-until').textContent = untilText;
+
+  // Next-event footer
+  let nextText = '';
+  if (status.state === 'busy' && status.nextFreeSlot)
+    nextText = `下一個空檔：${slotLabel(status.nextFreeSlot)}`;
+  else if ((status.state === 'available' || status.state === 'closed') && status.nextSlot)
+    nextText = `下一場預約：${slotLabel(status.nextSlot)}`;
+  document.getElementById('kiosk-next').textContent = nextText;
+
+  // Meeting context (dept + project) — show for busy/soon
+  const ctx = document.getElementById('kiosk-context');
+  if ((status.state === 'busy' || status.state === 'soon') && status.booking) {
+    const b    = status.booking;
+    const dept = getDept(b) || '—';
+    const proj = getProjectRegion(b) || '—';
+    document.getElementById('kiosk-dept').textContent    = dept;
+    document.getElementById('kiosk-project').textContent = proj;
+    ctx.classList.remove('hidden');
+  } else {
+    ctx.classList.add('hidden');
   }
-  if (status.nextSlot) {
-    nextText = `下一場：${slotLabel(status.nextSlot)}`;
-  }
-  document.getElementById('kiosk-booking-info').textContent = infoText;
-  document.getElementById('kiosk-next').textContent         = nextText;
-  document.querySelector('.kiosk-inner').className          = `kiosk-inner state-${status.state}`;
+
+  document.querySelector('.kiosk-inner').className = `kiosk-inner state-${status.state}`;
+}
+
+function stateLabel(state) {
+  return { available: '可使用', busy: '使用中', soon: '即將開始', closed: '已關閉' }[state] || state;
 }
 
 // ─── Normal app init ──────────────────────────────────────────────────────
