@@ -3,6 +3,10 @@
    Supports: variable duration, first-name identity, department + project/region,
    range-based conflict, door-card detail view, cancel-with-reason, CSV export */
 
+// ─── Layer 1 flag ─────────────────────────────────────────────────────────
+// Set to false to fall back to table-only view. No other code changes needed.
+const RIBBON_ENABLED = true;
+
 // ─── Constants ────────────────────────────────────────────────────────────
 // Department options — edit in config.identity.deptOptions or here
 const DEPT_OPTIONS = ['設計部', '業務部', '品保部', '財務部', '倉管部', '主管會議', '其他'];
@@ -564,10 +568,114 @@ function findNextBooked(roomId, afterMins) {
 // ─── Dashboard ────────────────────────────────────────────────────────────
 function renderDashboard() {
   renderRoomCards();
+  renderRibbon();
   renderTimeline();
   updateNowLine();
   if (nowLineTimer) clearInterval(nowLineTimer);
-  nowLineTimer = setInterval(updateNowLine, 30000);
+  nowLineTimer = setInterval(() => { updateNowLine(); updateRibbonNeedle(); }, 30000);
+}
+
+// ─── Layer 1: Time-ribbon ─────────────────────────────────────────────────
+function renderRibbon() {
+  const section = document.getElementById('ribbon-section');
+  if (!section) return;
+  const rel = compareDateToToday(selectedDate);
+  if (!RIBBON_ENABLED || rel === 'past') {
+    section.classList.add('hidden'); return;
+  }
+  section.classList.remove('hidden');
+
+  const cfg       = window.APP_CONFIG;
+  const gran      = cfg.schedule.granularityMinutes;
+  const [oh, om]  = cfg.schedule.open.split(':').map(Number);
+  const [ch, cm]  = cfg.schedule.close.split(':').map(Number);
+  const openMins  = oh * 60 + om;
+  const closeMins = ch * 60 + cm;
+  const totalMins = closeMins - openMins;
+
+  function pct(mins) { return ((mins - openMins) / totalMins * 100).toFixed(3) + '%'; }
+
+  // Time-tick axis
+  const axis = document.getElementById('ribbon-axis');
+  axis.innerHTML = '';
+  slots.forEach(slot => {
+    const tick = document.createElement('span');
+    tick.className = 'ribbon-tick';
+    tick.style.left = pct(slotToMins(slot));
+    tick.textContent = slotLabel(slot);
+    axis.appendChild(tick);
+  });
+
+  // Lanes
+  const body = document.getElementById('ribbon-body');
+  body.innerHTML = '';
+
+  cfg.rooms.forEach(room => {
+    const lane = document.createElement('div');
+    lane.className = 'ribbon-lane';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'ribbon-label';
+    lbl.textContent = room.name;
+    lane.appendChild(lbl);
+
+    const track = document.createElement('div');
+    track.className = 'ribbon-track';
+
+    slots.forEach(slot => {
+      const b = dayData[`${room.id}:${slot}`];
+      if (!b || b._continuation) return;
+
+      const startMins = slotToMins(slot);
+      const ds        = getDurationSlots(b);
+      const endMins   = startMins + ds * gran;
+      const nowMins   = getTaipeiNowMins();
+      const isPast    = rel === 'today' && endMins <= nowMins;
+
+      const block = document.createElement('button');
+      block.type = 'button';
+      block.className = `ribbon-block${isPast ? ' ribbon-block-past' : ''}`;
+      block.style.left  = pct(startMins);
+      block.style.width = (ds * gran / totalMins * 100).toFixed(3) + '%';
+
+      const label = escHtml(getTitle(b) || getDept(b) || '已預約');
+      block.innerHTML = `<span class="ribbon-block-label">${label}</span>`;
+      block.title = `${getBooker(b)} · ${slotLabel(slot)}–${getEndTime(slot, b)}`;
+      block.addEventListener('click', () => openDetailModal(room.id, slot, b));
+      track.appendChild(block);
+    });
+
+    lane.appendChild(track);
+    body.appendChild(lane);
+  });
+
+  updateRibbonNeedle();
+}
+
+function updateRibbonNeedle() {
+  const body = document.getElementById('ribbon-body');
+  if (!body) return;
+  let needle = document.getElementById('ribbon-needle');
+  if (compareDateToToday(selectedDate) !== 'today') {
+    if (needle) needle.remove(); return;
+  }
+  const cfg       = window.APP_CONFIG;
+  const [oh, om]  = cfg.schedule.open.split(':').map(Number);
+  const [ch, cm]  = cfg.schedule.close.split(':').map(Number);
+  const openMins  = oh * 60 + om, closeMins = ch * 60 + cm;
+  const nowMins   = getTaipeiNowMins();
+  if (nowMins <= openMins || nowMins >= closeMins) {
+    if (needle) needle.remove(); return;
+  }
+  if (!needle) {
+    needle = document.createElement('div');
+    needle.id = 'ribbon-needle';
+    needle.className = 'ribbon-needle';
+    needle.innerHTML = '<span class="ribbon-needle-dot"></span>';
+    body.appendChild(needle);
+  }
+  const pct = ((nowMins - openMins) / (closeMins - openMins) * 100).toFixed(3);
+  needle.style.left = pct + '%';
 }
 
 function renderRoomCards() {

@@ -1094,6 +1094,132 @@ h1 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; let
 .kiosk-icon        { color: var(--kiosk-color, var(--color-text-main)); }
 
 /* ═══════════════════════════════════════════════════════════════
+   Layer 1 — Time-ribbon (Gantt-style horizontal lanes)
+   ═══════════════════════════════════════════════════════════════ */
+.ribbon-section { margin-bottom: 4px; }
+
+.ribbon-wrapper {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin: 0 0 8px;
+}
+
+/* Time-tick axis at the bottom */
+.ribbon-axis {
+  position: relative;
+  height: 22px;
+  border-top: 1px solid var(--color-border-soft);
+  background: var(--color-bg-table-header);
+}
+.ribbon-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: .65rem;
+  color: var(--color-text-muted);
+  top: 4px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lanes container — relative so the now-needle can be absolute */
+.ribbon-body {
+  position: relative;
+}
+
+.ribbon-lane {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-border-soft);
+  min-height: 44px;
+}
+.ribbon-lane:last-child { border-bottom: none; }
+
+.ribbon-label {
+  width: 88px;
+  flex-shrink: 0;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--color-border-soft);
+  background: var(--color-bg-soft);
+  line-height: 1.3;
+}
+
+.ribbon-track {
+  flex: 1;
+  position: relative;
+  min-height: 44px;
+  background: var(--color-bg-card);
+}
+
+/* Booking blocks */
+.ribbon-block {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  min-width: 2px;
+  background: var(--color-slot-booked-bg);
+  border: 1px solid var(--color-slot-booked-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-slot-booked-text);
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+  text-align: left;
+}
+.ribbon-block:hover {
+  background: #BFDBFE;
+  box-shadow: var(--shadow-sm);
+  transform: scaleY(1.06);
+  z-index: 2;
+}
+.ribbon-block-past {
+  background: var(--color-slot-past-bg);
+  border-color: var(--color-slot-past-border);
+  color: var(--color-slot-past-text);
+  opacity: .55;
+}
+.ribbon-block-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Now-needle */
+.ribbon-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-brand-red);
+  z-index: 5;
+  pointer-events: none;
+  transform: translateX(-1px);
+}
+.ribbon-needle-dot {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-brand-red);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Desktop
    ═══════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {

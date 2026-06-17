@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css?v=l0">
+  <link rel="stylesheet" href="assets/style.css?v=l1">
 </head>
 <body>
 
@@ -79,6 +79,17 @@
       </div>
 
       <section id="room-status-grid" aria-label="會議室狀態總覽"></section>
+
+      <!-- ── Time ribbon (Layer 1, flag-gated) ── -->
+      <section id="ribbon-section" class="ribbon-section hidden" aria-label="時段甘特圖">
+        <h2 class="section-heading">時段甘特圖</h2>
+        <div id="ribbon-wrapper" class="ribbon-wrapper">
+          <div id="ribbon-body" class="ribbon-body">
+            <!-- lanes + needle injected by JS -->
+          </div>
+          <div class="ribbon-axis" id="ribbon-axis"><!-- time ticks --></div>
+        </div>
+      </section>
 
       <section id="today-schedule-section">
         <h2 class="section-heading">今日時段表</h2>
@@ -258,7 +269,7 @@
   <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <script src="config.js" onerror="window.__configMissing=true"></script>
-  <script src="assets/kv.js"></script>
-  <script src="assets/app.js"></script>
+  <script src="assets/kv.js?v=l1"></script>
+  <script src="assets/app.js?v=l1"></script>
 </body>
 </html>
