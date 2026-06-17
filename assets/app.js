@@ -781,8 +781,9 @@ function renderManage() {
   if (bookings.length === 0) {
     const dateStr = new Date(selectedDate + 'T12:00:00+08:00')
       .toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric' });
-    list.innerHTML = `<div class="manage-empty"><div class="manage-empty-icon">📭</div>
-      <div class="manage-empty-text">${escHtml(dateStr)}<br>今天還沒有預約。</div></div>`;
+    list.innerHTML = `<div class="manage-empty"><span class="manage-empty-icon">📭</span>
+      <div class="manage-empty-title">今日無預約</div>
+      <div class="manage-empty-text">${escHtml(dateStr)}<br>這一天目前沒有任何預約記錄。</div></div>`;
     return;
   }
 
@@ -878,7 +879,7 @@ async function renderWeekList() {
     });
 
     if (!hasAny) {
-      container.innerHTML = '<div class="manage-empty"><div class="manage-empty-icon">📭</div><div class="manage-empty-text">本週暫無預約</div></div>';
+      container.innerHTML = '<div class="manage-empty"><span class="manage-empty-icon">📭</span><div class="manage-empty-title">本週無預約</div><div class="manage-empty-text">本週目前沒有任何預約記錄。</div></div>';
     }
   } catch (e) {
     container.innerHTML = `<div class="manage-empty"><div class="manage-empty-icon">⚠️</div><div>載入失敗：${escHtml(e.message)}</div></div>`;
