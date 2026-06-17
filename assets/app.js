@@ -101,7 +101,7 @@ function init() {
     adapter      = createAdapter();
     slots        = generateSlots(window.APP_CONFIG);
     todayDate    = getTaipeiDate();
-    selectedDate = loadSavedDate() || todayDate;
+    selectedDate = todayDate;
     validateIdentityConfig();
   } catch (e) { showFatalError(e.message); return; }
 
@@ -524,15 +524,20 @@ function getRoomStatus(roomId) {
   if (nowMins < openMins || nowMins >= closeMins) {
     return { state: 'closed', icon: '–', text: nowMins < openMins ? '尚未開放' : '今日已結束', sub: '超出營業時間' };
   }
-  // Currently in a booked slot?
+  // Currently in a booked slot? (handles continuation slots by following to primary)
   for (const slot of slots) {
     const sm = slotToMins(slot);
     if (nowMins >= sm && nowMins < sm + gran) {
-      const b = dayData[`${roomId}:${slot}`];
+      let b = dayData[`${roomId}:${slot}`];
+      let primarySlot = slot;
+      if (b && b._continuation && b._primary_slot) {
+        primarySlot = b._primary_slot;
+        b = dayData[`${roomId}:${primarySlot}`] || null;
+      }
       if (b && !b._continuation) {
-        const endT = getEndTime(slot, b);
-        const nextFree = slots.find(s => slotToMins(s) >= slotToMins(slot) + getDurationSlots(b) * gran && !dayData[`${roomId}:${s}`]);
-        return { state: 'busy', icon: '✕', text: `使用中，到 ${endT}`, sub: '會議進行中', booking: b, slot, nextFreeSlot: nextFree };
+        const endT = getEndTime(primarySlot, b);
+        const nextFree = slots.find(s => slotToMins(s) >= slotToMins(primarySlot) + getDurationSlots(b) * gran && !dayData[`${roomId}:${s}`]);
+        return { state: 'busy', icon: '✕', text: `使用中，到 ${endT}`, sub: '會議進行中', booking: b, slot: primarySlot, nextFreeSlot: nextFree };
       }
     }
   }
@@ -1080,33 +1085,34 @@ async function submitBook() {
 
   const pinHash = pinRaw ? await hashPin(pinRaw) : null;
   const booking = makeBookingRecord({ roomId, startSlot, startTime, endTime, durationSlots, durationType, title, booker, department: dept, project_region, people, notes, pinHash });
-  if (editing) booking._replace_id = editing.booking.id;
+
+  // A3: compute old keys for atomic replace (replaceId passed separately, never persisted)
+  const gran = cfg.schedule.granularityMinutes;
+  const bookOpts = editing ? {
+    replaceId: editing.booking.id,
+    oldKeys:   occupiedSlotKeys(selectedDate, roomId, editing.slot, getDurationSlots(editing.booking), gran)
+  } : {};
 
   const submitBtn = document.getElementById('book-submit-btn');
   submitBtn.disabled = true; submitBtn.textContent = '送出中…';
 
   try {
-    // If editing: first cancel old booking
+    // Optimistically clear old slots from local dayData if editing
     if (editing) {
-      await adapter.cancel(selectedDate, roomId, editing.slot, null);
-      // Remove old slots from dayData
-      const gran = cfg.schedule.granularityMinutes;
-      const oldDs = getDurationSlots(editing.booking);
       let cur = editing.slot;
       dayData[`${roomId}:${cur}`] = null;
-      for (let i = 1; i < oldDs; i++) {
+      for (let i = 1; i < getDurationSlots(editing.booking); i++) {
         cur = slotPlusGranApp(cur, gran);
         dayData[`${roomId}:${cur}`] = null;
       }
     }
 
-    const result = await adapter.book(selectedDate, roomId, startSlot, booking);
+    const result = await adapter.book(selectedDate, roomId, startSlot, booking, bookOpts);
 
     if (result.ok) {
       saveIdentity(booker, dept, project_region);
       // Optimistic update
       dayData[`${roomId}:${startSlot}`] = booking;
-      const gran = cfg.schedule.granularityMinutes;
       const cont = { _continuation: true, _primary_slot: startSlot, id: booking.id, booker, owner: booker, department: dept, dept };
       let cur = startSlot;
       for (let i = 1; i < durationSlots; i++) {
