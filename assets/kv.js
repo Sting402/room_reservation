@@ -213,6 +213,7 @@ class UpstashAdapter {
 
   async _eval(script, args) {
     const [res] = await this._pipeline([['EVAL', script, 0, ...args]]);
+    if (res.error) throw new Error('Upstash EVAL error: ' + res.error);
     return res.result;
   }
 
@@ -284,8 +285,9 @@ class UpstashAdapter {
     ];
 
     const result = await this._eval(BOOK_LUA, args);
-    if (result === 'ok') return { ok: true };
-    return { ok: false, reason: 'conflict' };
+    if (result === 'ok')       return { ok: true };
+    if (result === 'conflict') return { ok: false, reason: 'conflict' };
+    throw new Error('Unexpected EVAL result: ' + result);
   }
 
   async cancel(date, roomId, slot, pin) {

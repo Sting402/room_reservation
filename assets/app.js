@@ -144,9 +144,9 @@ function loadSavedDate() {
 }
 function saveSelectedDate(d) { try { localStorage.setItem('mrs:selectedDate', d); } catch {} }
 function getTomorrowDate() {
-  const d = new Date(todayDate + 'T00:00:00');
-  d.setDate(d.getDate() + 1);
-  return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+  const d = new Date(getTaipeiDate() + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
 }
 function normalizeDateInput(str) {
   if (!str) return '';
@@ -161,15 +161,15 @@ function isSelectedDateFuture() { return compareDateToToday(selectedDate) === 'f
 // Get dates for current week (Mon–Sun containing today)
 function getThisWeekDates() {
   const tai  = getTaipeiDate();
-  const base = new Date(tai + 'T00:00:00+08:00');
-  const dow  = base.getDay(); // 0=Sun,1=Mon,...
+  const base = new Date(tai + 'T00:00:00Z');
+  const dow  = base.getUTCDay();
   const mon  = new Date(base);
-  mon.setDate(base.getDate() - (dow === 0 ? 6 : dow - 1));
+  mon.setUTCDate(base.getUTCDate() - (dow === 0 ? 6 : dow - 1));
   const dates = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
-    dates.push(d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }));
+    d.setUTCDate(mon.getUTCDate() + i);
+    dates.push(d.toISOString().slice(0, 10));
   }
   return dates;
 }
@@ -1231,20 +1231,19 @@ async function submitBook() {
   submitBtn.disabled = true; submitBtn.textContent = '送出中…';
 
   try {
-    // Optimistically clear old slots from local dayData if editing
-    if (editing) {
-      let cur = editing.slot;
-      dayData[`${roomId}:${cur}`] = null;
-      for (let i = 1; i < getDurationSlots(editing.booking); i++) {
-        cur = slotPlusGranApp(cur, gran);
-        dayData[`${roomId}:${cur}`] = null;
-      }
-    }
-
     const result = await adapter.book(selectedDate, roomId, startSlot, booking, bookOpts);
 
     if (result.ok) {
       saveIdentity(booker, dept, project_region);
+      // Clear old slots only on success (no vanish on failure)
+      if (editing) {
+        let cur = editing.slot;
+        dayData[`${roomId}:${cur}`] = null;
+        for (let i = 1; i < getDurationSlots(editing.booking); i++) {
+          cur = slotPlusGranApp(cur, gran);
+          dayData[`${roomId}:${cur}`] = null;
+        }
+      }
       // Optimistic update
       dayData[`${roomId}:${startSlot}`] = booking;
       const cont = { _continuation: true, _primary_slot: startSlot, id: booking.id, booker, owner: booker, department: dept, dept };
